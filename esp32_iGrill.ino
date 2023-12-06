@@ -429,7 +429,7 @@ void getiGrillInfo()
 {
   try
   {
-    std::string fwVersion = iGrillAuthService->getCharacteristic(FIRMWARE_VERSION)->readValue();
+    std::string fwVersion = iGrillAuthService->getCharacteristic(FIRMWARE_VERSION)->readValue().c_str();
     if(deviceStr == "")
       setDeviceJSONObject(fwVersion.c_str(), myDevice->getAddress().toString().c_str());
     publishSystemInfo();
@@ -616,10 +616,10 @@ bool connectToServer()
         authRemoteCharacteristic->writeValue((uint8_t*)chalBuf, sizeof(chalBuf), true);
         delay(500);
         IGRILLLOGGER(" - Reading iGrill Device Challenge",1);
-        std::string encrypted_device_challenge = iGrillAuthService->getCharacteristic(DEVICE_CHALLENGE)->readValue();
+        std::string encrypted_device_challenge = iGrillAuthService->getCharacteristic(DEVICE_CHALLENGE)->readValue().c_str();
         delay(500);
         IGRILLLOGGER(" - Writing Encrypted iGrill Device Challenge...",1);
-        iGrillAuthService->getCharacteristic(DEVICE_RESPONSE)->writeValue(encrypted_device_challenge, true);
+        iGrillAuthService->getCharacteristic(DEVICE_RESPONSE)->writeValue(encrypted_device_challenge.c_str(), true);
         //End of Authentication Sequence
         IGRILLLOGGER(" - Authentication Complete",1);
         if(iGrillModel == "iGrill_mini")
