@@ -22,6 +22,8 @@ static const char *const PROBE4_UUID = "06ef0008-2e06-4b79-9e33-fce2c42805ec";
 
 // Battery characteristic UUID
 static const char *const BATTERY_UUID = "00002a19-0000-1000-8000-00805f9b34fb";
+// Battery Service UUID (standard Bluetooth SIG UUID)
+static const char *const BATTERY_SERVICE_UUID = "0000180f-0000-1000-8000-00805f9b34fb";
 
 // Propane level characteristic UUID (for iGrill mini)
 static const char *const PROPANE_UUID = "06ef0003-2e06-4b79-9e33-fce2c42805ec";

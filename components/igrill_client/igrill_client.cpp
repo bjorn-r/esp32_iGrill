@@ -156,7 +156,7 @@ void IGrillClient::discover_characteristics_() {
 
   // Discover battery characteristic
   auto battery_char = client->get_characteristic(
-    esphome::esp32_ble::ESPBTUUID::from_raw("0000"), // Since the battery UUID is standard, likely a predefined constant
+    esphome::esp32_ble::ESPBTUUID::from_raw(BATTERY_SERVICE_UUID),
     esphome::esp32_ble::ESPBTUUID::from_raw(BATTERY_UUID)
   );
   this->battery_handle_ = battery_char ? battery_char->handle : 0;
