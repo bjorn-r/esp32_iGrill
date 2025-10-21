@@ -19,16 +19,32 @@ ESP32 BLE client for Weber iGrill thermometers, built on the ESPHome platform.
 - iGrill v202
 - iGrill v3 (with propane sensor support)
 
+## Project Structure
+
+```
+esp32_iGrill/
+├── components/
+│   └── igrill_client/         # Custom ESPHome component
+│       ├── __init__.py         # Component registration
+│       ├── igrill_client.h     # Main client header
+│       ├── igrill_client.cpp   # Main client implementation
+│       ├── igrill_auth.h       # Authentication header
+│       ├── igrill_auth.cpp     # Authentication implementation
+│       └── igrill_const.h      # Constants and UUIDs
+└── examples/
+    ├── igrill-basic.yaml       # Basic configuration
+    ├── igrill-full.yaml        # Full featured configuration
+    ├── igrill-v3-propane.yaml  # iGrill v3 with propane sensor
+    └── secrets.yaml            # WiFi and device credentials
+```
+
 ## Quick Start
 
 ### Requirements
 - ESP32 development board
 - Weber iGrill device
-- ESPHome installed
+- ESPHome installed (2024.6.0 or later)
 - Home Assistant (optional but recommended)
-
-### Installation
-See [Installation Guide](docs/INSTALLATION.md) for detailed setup instructions.
 
 ## Building the Project
 
@@ -39,19 +55,30 @@ See [Installation Guide](docs/INSTALLATION.md) for detailed setup instructions.
 
 ### Build Instructions
 
-1. **Install ESPHome** (if not already installed):
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/1mckenna/esp32_iGrill.git
+   cd esp32_iGrill
+   ```
+
+2. **Install ESPHome** (if not already installed):
    ```bash
    pip3 install esphome
    ```
 
-2. **Configure your device** by editing `examples/igrill-basic.yaml` or create your own configuration file
+3. **Configure your device**:
 
-3. **Update secrets** in `examples/secrets.yaml`:
+   Copy the example secrets file:
+   ```bash
+   cp examples/secrets.yaml.example examples/secrets.yaml
+   ```
+
+   Edit `examples/secrets.yaml` with your credentials:
    ```yaml
    wifi_ssid: "YourWiFiSSID"
    wifi_password: "YourWiFiPassword"
    igrill_mac_address: "AA:BB:CC:DD:EE:FF"  # Your iGrill's MAC address
-   api_encryption_key: "generated_key"       # Generate with: esphome config igrill-basic.yaml
+   api_encryption_key: "generated_key"       # Generate with: esphome config examples/igrill-basic.yaml
    ota_password: "your_ota_password"
    ```
 
@@ -60,6 +87,8 @@ See [Installation Guide](docs/INSTALLATION.md) for detailed setup instructions.
    cd examples
    esphome compile igrill-basic.yaml
    ```
+
+   The ESPHome build system will automatically discover and use the custom component from `../components/igrill_client/`.
 
 5. **Upload to ESP32** (first time requires USB):
    ```bash
@@ -74,20 +103,24 @@ See [Installation Guide](docs/INSTALLATION.md) for detailed setup instructions.
 ### OTA Updates
 After initial USB flash, updates can be done wirelessly:
 ```bash
+cd examples
 esphome upload igrill-basic.yaml
 ```
 
 ### Validation Only
 To validate configuration without building:
 ```bash
+cd examples
 esphome config igrill-basic.yaml
 ```
 
-## Documentation
-- [Installation Guide](docs/INSTALLATION.md)
-- [Configuration Reference](docs/CONFIGURATION.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-- [Migration from Arduino](docs/MIGRATION_FROM_ARDUINO.md)
+## Configuration Examples
+
+The `examples/` directory contains three ready-to-use configurations:
+
+- **igrill-basic.yaml** - Minimal setup with temperature sensors and battery monitoring
+- **igrill-full.yaml** - Complete setup with all sensors, diagnostic entities, and MQTT
+- **igrill-v3-propane.yaml** - iGrill v3 configuration with propane level sensor
 
 ## Advantages over Arduino Version
 - **90% less code** - From ~9,800 lines to ~950 lines
