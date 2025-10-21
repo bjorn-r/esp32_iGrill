@@ -1,2 +1,10 @@
 .vscode
 build
+
+# ESPHome build artifacts
+examples/.esphome/
+*.pyc
+__pycache__/
+
+# Secrets
+secrets.yaml
