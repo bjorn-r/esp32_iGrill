@@ -8,6 +8,12 @@ namespace igrill_client {
 // iGrill BLE Service and Characteristic UUIDs
 static const char *const IGRILL_SERVICE_UUID = "0000fff0-0000-1000-8000-00805f9b34fb";
 
+// Authentication Service and Characteristic UUIDs
+static const char *const AUTH_SERVICE_UUID = "64ac0000-4a4b-4b58-9f37-94d3c52ffdf7";
+static const char *const APP_CHALLENGE_UUID = "64ac0002-4a4b-4b58-9f37-94d3c52ffdf7";
+static const char *const DEVICE_CHALLENGE_UUID = "64ac0003-4a4b-4b58-9f37-94d3c52ffdf7";
+static const char *const DEVICE_RESPONSE_UUID = "64ac0004-4a4b-4b58-9f37-94d3c52ffdf7";
+
 // Probe characteristic UUIDs (for temperature readings)
 static const char *const PROBE1_UUID = "06ef0002-2e06-4b79-9e33-fce2c42805ec";
 static const char *const PROBE2_UUID = "06ef0004-2e06-4b79-9e33-fce2c42805ec";
@@ -19,15 +25,6 @@ static const char *const BATTERY_UUID = "00002a19-0000-1000-8000-00805f9b34fb";
 
 // Propane level characteristic UUID (for iGrill mini)
 static const char *const PROPANE_UUID = "06ef0003-2e06-4b79-9e33-fce2c42805ec";
-
-// App challenge characteristic UUID (for authentication)
-static const char *const APP_CHALLENGE_UUID = "00000064-0000-1000-8000-00805f9b34fb";
-
-// Device challenge characteristic UUID (for authentication)
-static const char *const DEVICE_CHALLENGE_UUID = "00000065-0000-1000-8000-00805f9b34fb";
-
-// Device response characteristic UUID (for authentication)
-static const char *const DEVICE_RESPONSE_UUID = "00000066-0000-1000-8000-00805f9b34fb";
 
 // Constants
 static const uint8_t IGRILL_MAX_PROBES = 4;

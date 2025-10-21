@@ -50,17 +50,55 @@ void IGrillClient::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t
       this->authenticate_();
       break;
 
-    case ESP_GATTC_NOTIFY_EVT:
+    case ESP_GATTC_WRITE_CHAR_EVT:
+      // Track authentication state transitions via write events
+      ESP_LOGD(TAG, "Write characteristic event (handle: 0x%04x)", param->write.handle);
+      break;
+
+    case ESP_GATTC_READ_CHAR_EVT:
+      // Handle read events during authentication
+      ESP_LOGD(TAG, "Read characteristic event (handle: 0x%04x)", param->read.handle);
+      break;
+
+    case ESP_GATTC_NOTIFY_EVT: {
       ESP_LOGD(TAG, "Notification received from handle 0x%04x", param->notify.handle);
-      // Handle notifications from probes, battery, propane
-      if (param->notify.handle == this->probe1_handle_ && this->probe1_sensor_) {
-        float temp = this->parse_temperature_(param->notify.value, param->notify.value_len);
-        if (temp != INVALID_TEMPERATURE) {
-          this->probe1_sensor_->publish_state(temp);
+
+      // Probe notification handling
+      struct HandleSensorPair {
+        uint16_t handle;
+        sensor::Sensor* sensor;
+      };
+      HandleSensorPair pairs[] = {
+        {this->probe1_handle_, this->probe1_sensor_},
+        {this->probe2_handle_, this->probe2_sensor_},
+        {this->probe3_handle_, this->probe3_sensor_},
+        {this->probe4_handle_, this->probe4_sensor_},
+        {this->battery_handle_, this->battery_sensor_},
+        {this->propane_handle_, this->propane_sensor_}
+      };
+
+      for (const auto& pair : pairs) {
+        if (param->notify.handle == pair.handle && pair.sensor) {
+          if (pair.handle == this->battery_handle_) {
+            // Battery notification
+            uint8_t battery_level = this->parse_battery_(param->notify.value, param->notify.value_len);
+            pair.sensor->publish_state(battery_level);
+          } else if (pair.handle == this->propane_handle_) {
+            // Propane notification
+            uint8_t propane_level = this->parse_propane_(param->notify.value, param->notify.value_len);
+            pair.sensor->publish_state(propane_level);
+          } else {
+            // Probe temperature notification
+            float temp = this->parse_temperature_(param->notify.value, param->notify.value_len);
+            if (temp != INVALID_TEMPERATURE) {
+              pair.sensor->publish_state(temp);
+            }
+          }
+          break;
         }
       }
-      // TODO: Add similar handling for other probes, battery, propane
       break;
+    }
 
     default:
       break;
@@ -74,21 +112,115 @@ void IGrillClient::authenticate_() {
 
   ESP_LOGI(TAG, "Authenticating with iGrill device...");
 
-  // TODO: Implement full authentication using igrill_auth
-  // For now, just mark as authenticated to allow testing
-  this->authenticated_ = true;
+  // Use the authenticator to perform full authentication
+  this->authenticator_.reset();
+  this->authenticated_ = this->authenticator_.authenticate(this->parent());
 
-  ESP_LOGI(TAG, "Authentication placeholder complete");
+  if (this->authenticated_) {
+    ESP_LOGI(TAG, "Authentication successful");
+    // Discover characteristics after successful authentication
+    this->discover_characteristics_();
+  } else {
+    ESP_LOGW(TAG, "Authentication failed");
+  }
+}
+
+void IGrillClient::discover_characteristics_() {
+  ESP_LOGI(TAG, "Discovering iGrill characteristics...");
+
+  auto *client = this->parent();
+  if (!client) {
+    ESP_LOGE(TAG, "No BLE client available for characteristic discovery");
+    return;
+  }
+
+  // Define an array of probe UUIDs for easier iteration
+  const char* probe_uuids[] = {PROBE1_UUID, PROBE2_UUID, PROBE3_UUID, PROBE4_UUID};
+  uint16_t* probe_handles[] = {&this->probe1_handle_, &this->probe2_handle_,
+                                &this->probe3_handle_, &this->probe4_handle_};
+
+  // Discover probe characteristics
+  for (size_t i = 0; i < 4; i++) {
+    auto probe_handle = client->get_characteristic(
+      esphome::esp32_ble::ESPBTUUID::from_raw(IGRILL_SERVICE_UUID),
+      esphome::esp32_ble::ESPBTUUID::from_raw(probe_uuids[i])
+    );
+    *probe_handles[i] = probe_handle ? probe_handle->handle : 0;
+
+    if (probe_handle) {
+      ESP_LOGI(TAG, "Found probe %d characteristic (handle: 0x%04x)", i+1, *probe_handles[i]);
+    } else {
+      ESP_LOGW(TAG, "Probe %d characteristic not found", i+1);
+    }
+  }
+
+  // Discover battery characteristic
+  auto battery_char = client->get_characteristic(
+    esphome::esp32_ble::ESPBTUUID::from_raw("0000"), // Since the battery UUID is standard, likely a predefined constant
+    esphome::esp32_ble::ESPBTUUID::from_raw(BATTERY_UUID)
+  );
+  this->battery_handle_ = battery_char ? battery_char->handle : 0;
+  if (battery_char) {
+    ESP_LOGI(TAG, "Found battery characteristic (handle: 0x%04x)", this->battery_handle_);
+  } else {
+    ESP_LOGW(TAG, "Battery characteristic not found");
+  }
+
+  // Discover propane characteristic
+  auto propane_char = client->get_characteristic(
+    esphome::esp32_ble::ESPBTUUID::from_raw(IGRILL_SERVICE_UUID),
+    esphome::esp32_ble::ESPBTUUID::from_raw(PROPANE_UUID)
+  );
+  this->propane_handle_ = propane_char ? propane_char->handle : 0;
+  if (propane_char) {
+    ESP_LOGI(TAG, "Found propane characteristic (handle: 0x%04x)", this->propane_handle_);
+  } else {
+    ESP_LOGW(TAG, "Propane characteristic not found");
+  }
+
+  // After discovery, subscribe to characteristics
   this->subscribe_to_characteristics_();
 }
 
 void IGrillClient::subscribe_to_characteristics_() {
-  ESP_LOGD(TAG, "Subscribing to characteristics...");
+  ESP_LOGD(TAG, "Subscribing to iGrill characteristics...");
 
-  // TODO: Get characteristic handles using parent()->get_characteristic()
-  // TODO: Subscribe to notifications for probes, battery, propane
+  auto *client = this->parent();
+  if (!client) {
+    ESP_LOGE(TAG, "No BLE client available for characteristic subscription");
+    return;
+  }
 
-  ESP_LOGD(TAG, "Characteristic subscription placeholder complete");
+  // Define an array of handles and sensors for easier iteration
+  struct HandleSensorPair {
+    uint16_t handle;
+    sensor::Sensor* sensor;
+  };
+
+  HandleSensorPair pairs[] = {
+    {this->probe1_handle_, this->probe1_sensor_},
+    {this->probe2_handle_, this->probe2_sensor_},
+    {this->probe3_handle_, this->probe3_sensor_},
+    {this->probe4_handle_, this->probe4_sensor_},
+    {this->battery_handle_, this->battery_sensor_},
+    {this->propane_handle_, this->propane_sensor_}
+  };
+
+  // Subscribe to characteristics
+  for (const auto& pair : pairs) {
+    if (pair.handle != 0 && pair.sensor) {
+      auto status = esp_ble_gattc_register_for_notify(
+        client->get_gattc_if(),
+        client->get_remote_bda(),
+        pair.handle
+      );
+      if (status) {
+        ESP_LOGD(TAG, "Successfully subscribed to characteristic handle 0x%04x", pair.handle);
+      } else {
+        ESP_LOGW(TAG, "Failed to subscribe to characteristic handle 0x%04x", pair.handle);
+      }
+    }
+  }
 }
 
 float IGrillClient::parse_temperature_(const uint8_t *data, uint16_t length) {

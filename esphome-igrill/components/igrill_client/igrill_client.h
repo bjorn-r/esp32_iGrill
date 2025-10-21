@@ -3,12 +3,24 @@
 #include "esphome/core/component.h"
 #include "esphome/components/ble_client/ble_client.h"
 #include "esphome/components/sensor/sensor.h"
+#include "esphome/components/esp32_ble/ble_uuid.h"
 #include "igrill_const.h"
+#include "igrill_auth.h"
 
 #ifdef USE_ESP32
 
 namespace esphome {
 namespace igrill_client {
+
+// Authentication state machine
+enum AuthState {
+  AUTH_IDLE,
+  AUTH_CHALLENGE_SENT,
+  AUTH_WAITING_DEVICE_CHALLENGE,
+  AUTH_RESPONSE_SENT,
+  AUTH_AUTHENTICATED,
+  AUTH_FAILED
+};
 
 class IGrillClient : public ble_client::BLEClientNode, public PollingComponent {
  public:
@@ -31,6 +43,12 @@ class IGrillClient : public ble_client::BLEClientNode, public PollingComponent {
   void set_use_metric(bool use_metric) { this->use_metric_ = use_metric; }
 
  protected:
+  // Helpers for sensor-handle mapping
+  struct HandleSensorPair {
+    uint16_t handle;
+    sensor::Sensor* sensor;
+  };
+
   // Sensor pointers
   sensor::Sensor *probe1_sensor_{nullptr};
   sensor::Sensor *probe2_sensor_{nullptr};
@@ -51,9 +69,14 @@ class IGrillClient : public ble_client::BLEClientNode, public PollingComponent {
   uint16_t battery_handle_{0};
   uint16_t propane_handle_{0};
 
+  // Authentication
+  IgrillAuthenticator authenticator_;
+  AuthState auth_state_{AUTH_IDLE};
+
   // Helper methods
   void authenticate_();
   void subscribe_to_characteristics_();
+  void discover_characteristics_();
   float parse_temperature_(const uint8_t *data, uint16_t length);
   uint8_t parse_battery_(const uint8_t *data, uint16_t length);
   uint8_t parse_propane_(const uint8_t *data, uint16_t length);
