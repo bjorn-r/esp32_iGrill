@@ -1,6 +1,5 @@
 #include "igrill_client.h"
 #include "esphome/core/log.h"
-#include "esphome/components/ble_client/ble_client_base.h"
 #include "igrill_auth.h"
 #include "igrill_const.h"
 
