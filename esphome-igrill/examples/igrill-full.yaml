@@ -1,0 +1,72 @@
+esphome:
+  name: igrill-full
+  friendly_name: "iGrill Full Configuration"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enhanced logging configuration
+logger:
+  level: DEBUG  # More verbose logging for troubleshooting
+
+# Enable Home Assistant API with encryption
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+# Over-the-Air (OTA) Updates
+ota:
+  password: !secret ota_password
+
+# WiFi Configuration with Backup Network
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Secondary WiFi network for redundancy
+  networks:
+    - ssid: !secret wifi_ssid2
+      password: !secret wifi_password2
+
+  # Fallback hotspot if both networks fail
+  ap:
+    ssid: "iGrill Fallback"
+    password: "igrill123"
+
+# Enable ESP32 BLE tracker
+esp32_ble_tracker:
+  scan_interval: 300ms  # Optional: adjust BLE scan interval
+
+# BLE Client configuration
+ble_client:
+  - mac_address: !secret igrill_mac_address  # Replace with your iGrill MAC address
+    id: igrill_ble
+
+# iGrill Client Component - Full Configuration
+igrill_client:
+  ble_client_id: igrill_ble
+  use_metric: false  # Set to true for Celsius, false for Fahrenheit
+
+  # Configure all 4 probes with optional names and descriptions
+  probe1:
+    name: "Food 1: Brisket"
+    id: brisket_probe
+  probe2:
+    name: "Food 2: Ribs"
+    id: ribs_probe
+  probe3:
+    name: "Food 3: Chicken"
+    id: chicken_probe
+  probe4:
+    name: "Grill Temperature"
+    id: grill_probe
+
+  # Battery monitoring
+  battery_level:
+    name: "iGrill Battery"
+
+  # Optional advanced settings
+  scan_interval: 60s  # How often to poll for updates
+  timeout: 30s  # Connection timeout

@@ -1,0 +1,70 @@
+esphome:
+  name: igrill-v3-propane
+  friendly_name: "iGrill V3 with Propane"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Basic logging configuration
+logger:
+  level: INFO
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+# Over-the-Air (OTA) Updates
+ota:
+  password: !secret ota_password
+
+# WiFi Configuration
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Fallback hotspot in case WiFi connection fails
+  ap:
+    ssid: "iGrill V3 Fallback"
+    password: "igrill123"
+
+# Enable ESP32 BLE tracker
+esp32_ble_tracker:
+
+# BLE Client configuration for iGrill V3
+ble_client:
+  - mac_address: !secret igrill_mac_address  # Replace with your iGrill V3 MAC address
+    id: igrill_v3_ble
+
+# iGrill Client Component - V3 Configuration
+igrill_client:
+  ble_client_id: igrill_v3_ble
+  use_metric: false  # Set to true for Celsius, false for Fahrenheit
+  device_type: igrill_v3  # Specify V3 for special handling
+
+  # Configure probes specific to iGrill V3
+  probe1:
+    name: "Food Probe 1"
+  probe2:
+    name: "Food Probe 2"
+  probe3:
+    name: "Food Probe 3"
+  probe4:
+    name: "Grill Temperature"
+
+  # V3 Specific: Propane Level Sensor
+  propane:
+    name: "Propane Level"
+    # Optional thresholds or alerts can be added here
+    low_threshold: 20  # Percentage below which to trigger low propane alert
+    high_threshold: 80  # Percentage to indicate full tank
+
+  # Battery monitoring
+  battery_level:
+    name: "iGrill V3 Battery"
+
+  # Optional: Sensor update and connection settings
+  scan_interval: 90s  # Slightly longer interval for V3
+  timeout: 45s  # Adjusted connection timeout

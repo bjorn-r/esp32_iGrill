@@ -1,0 +1,54 @@
+esphome:
+  name: igrill-basic
+  friendly_name: "iGrill Basic Thermometer"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Basic logging configuration
+logger:
+  level: INFO
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+# Over-the-Air (OTA) Updates
+ota:
+  password: !secret ota_password
+
+# WiFi Configuration
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Fallback hotspot in case WiFi connection fails
+  ap:
+    ssid: "iGrill Fallback"
+    password: "igrill123"
+
+# Enable ESP32 BLE tracker
+esp32_ble_tracker:
+
+# BLE Client configuration
+ble_client:
+  - mac_address: !secret igrill_mac_address  # Replace with your iGrill MAC address
+    id: igrill_ble
+
+# iGrill Client Component
+igrill_client:
+  ble_client_id: igrill_ble
+  use_metric: false  # Set to true for Celsius, false for Fahrenheit
+
+  # Configure 2 probes (minimal setup)
+  probe1:
+    name: "Food Probe"
+  probe2:
+    name: "Grill Probe"
+
+  # Optional: Battery monitoring
+  battery_level:
+    name: "iGrill Battery"
