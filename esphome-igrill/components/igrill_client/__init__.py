@@ -4,17 +4,18 @@ from esphome.components import ble_client, sensor
 from esphome.const import (
     CONF_BATTERY_LEVEL,
     CONF_ID,
-    CONF_USE_METRIC,
     DEVICE_CLASS_BATTERY,
     DEVICE_CLASS_TEMPERATURE,
     STATE_CLASS_MEASUREMENT,
     UNIT_CELSIUS,
-    UNIT_FAHRENHEIT,
     UNIT_PERCENT,
 )
 
-# Set AUTO_LOAD dependency to ensure BLE client is loaded
-AUTO_LOAD = ["ble_client"]
+# Define constants not in esphome.const
+CONF_USE_METRIC = "use_metric"
+
+# Set AUTO_LOAD dependency to ensure required components are loaded
+AUTO_LOAD = ["ble_client", "sensor"]
 DEPENDENCIES = ["ble_client"]
 CODEOWNERS = ["@bendudson"]
 

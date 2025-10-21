@@ -18,7 +18,8 @@ api:
 
 # Over-the-Air (OTA) Updates
 ota:
-  password: !secret ota_password
+  - platform: esphome
+    password: !secret ota_password
 
 # WiFi Configuration with Backup Network
 wifi:

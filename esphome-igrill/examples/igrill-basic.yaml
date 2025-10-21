@@ -7,6 +7,13 @@ esp32:
   framework:
     type: arduino
 
+# External components - load our custom iGrill component
+external_components:
+  - source:
+      type: local
+      path: ../components
+    components: [igrill_client]
+
 # Basic logging configuration
 logger:
   level: INFO
@@ -18,7 +25,8 @@ api:
 
 # Over-the-Air (OTA) Updates
 ota:
-  password: !secret ota_password
+  - platform: esphome
+    password: !secret ota_password
 
 # WiFi Configuration
 wifi:
