@@ -46,5 +46,10 @@ enum ProbeStatus {
   PROBE_STATUS_ERROR = 3
 };
 
+// Temperature Units
+static const char *const IGRILL_TEMP_UNITS_UUID = "06ef000a-2e06-4b79-9e33-fce2c42805ec";
+static const uint8_t IMPERIAL_UNITS = 0;
+static const uint8_t METRIC_UNITS = 1;
+
 }  // namespace igrill_client
 }  // namespace esphome
