@@ -214,10 +214,10 @@ void IGrillClient::subscribe_to_characteristics_() {
         client->get_remote_bda(),
         pair.handle
       );
-      if (status) {
+      if (status == ESP_GATT_OK) {
         ESP_LOGD(TAG, "Successfully subscribed to characteristic handle 0x%04x", pair.handle);
       } else {
-        ESP_LOGW(TAG, "Failed to subscribe to characteristic handle 0x%04x", pair.handle);
+        ESP_LOGW(TAG, "Failed to subscribe to characteristic handle 0x%04x (error: %d)", pair.handle, status);
       }
     }
   }
