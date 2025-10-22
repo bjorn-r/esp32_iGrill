@@ -73,6 +73,10 @@ class IGrillClient : public ble_client::BLEClientNode, public PollingComponent {
   IgrillAuthenticator authenticator_;
   AuthState auth_state_{AUTH_IDLE};
 
+  // Authentication timeout tracking
+  uint32_t auth_start_time_{0};
+  uint32_t auth_timeout_ms_{10000};  // 10 second timeout
+
   // Helper methods
   void authenticate_();
   void subscribe_to_characteristics_();

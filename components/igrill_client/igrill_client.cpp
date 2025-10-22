@@ -13,8 +13,19 @@ void IGrillClient::setup() {
 }
 
 void IGrillClient::update() {
-  // Polling update - check connection status
-  if (this->node_state == esp32_ble_tracker::ClientState::ESTABLISHED && !this->authenticated_) {
+  // Check for authentication timeout
+  if (this->auth_state_ != AUTH_IDLE && this->auth_state_ != AUTH_AUTHENTICATED) {
+    uint32_t elapsed = millis() - this->auth_start_time_;
+    if (elapsed > this->auth_timeout_ms_) {
+      ESP_LOGW(TAG, "Authentication timeout after %d ms (state: %d)", elapsed, this->auth_state_);
+      this->auth_state_ = AUTH_FAILED;
+      // Will be reset to AUTH_IDLE on next update cycle or disconnect
+    }
+  }
+
+  // Polling update - check connection status and initiate auth if needed
+  if (this->node_state == esp32_ble_tracker::ClientState::ESTABLISHED &&
+      this->auth_state_ == AUTH_IDLE) {
     this->authenticate_();
   }
 }
@@ -72,6 +83,7 @@ void IGrillClient::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t
         ESP_LOGI(TAG, "Authentication completed successfully");
         this->auth_state_ = AUTH_AUTHENTICATED;
         this->authenticated_ = true;
+        this->auth_start_time_ = 0;  // Reset timer
         this->discover_characteristics_();
       }
       break;
@@ -149,6 +161,7 @@ void IGrillClient::authenticate_() {
   ESP_LOGI(TAG, "Starting iGrill authentication...");
   this->authenticator_.reset();
   this->auth_state_ = AUTH_CHALLENGE_SENT;
+  this->auth_start_time_ = millis();  // Start timeout timer
   this->authenticator_.authenticate(this->parent());
   // Authentication continues asynchronously via gattc_event_handler
 }
