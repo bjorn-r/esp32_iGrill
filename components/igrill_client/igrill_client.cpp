@@ -215,7 +215,28 @@ void IGrillClient::subscribe_to_characteristics_() {
         pair.handle
       );
       if (status == ESP_GATT_OK) {
-        ESP_LOGD(TAG, "Successfully subscribed to characteristic handle 0x%04x", pair.handle);
+        ESP_LOGD(TAG, "Successfully registered for notifications on handle 0x%04x", pair.handle);
+
+        // Enable notifications by writing 0x0001 to CCCD
+        // CCCD is typically at characteristic handle + 1
+        uint16_t notify_enable = 0x0001;
+        uint16_t cccd_handle = pair.handle + 1;
+
+        auto write_status = esp_ble_gattc_write_char_descr(
+          client->get_gattc_if(),
+          client->get_conn_id(),
+          cccd_handle,
+          sizeof(notify_enable),
+          (uint8_t*)&notify_enable,
+          ESP_GATT_WRITE_TYPE_RSP,
+          ESP_GATT_AUTH_REQ_NONE
+        );
+
+        if (write_status == ESP_GATT_OK) {
+          ESP_LOGD(TAG, "Successfully enabled notifications via CCCD for handle 0x%04x", pair.handle);
+        } else {
+          ESP_LOGW(TAG, "Failed to write CCCD for handle 0x%04x (error: %d)", pair.handle, write_status);
+        }
       } else {
         ESP_LOGW(TAG, "Failed to subscribe to characteristic handle 0x%04x (error: %d)", pair.handle, status);
       }
