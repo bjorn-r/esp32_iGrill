@@ -51,13 +51,31 @@ void IGrillClient::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t
       break;
 
     case ESP_GATTC_WRITE_CHAR_EVT:
-      // Track authentication state transitions via write events
-      ESP_LOGD(TAG, "Write characteristic event (handle: 0x%04x)", param->write.handle);
+      ESP_LOGD(TAG, "Write characteristic event (handle: 0x%04x, status: %d)", param->write.handle, param->write.status);
+
+      // Handle authentication write completion
+      if (this->auth_state_ == AUTH_CHALLENGE_SENT && param->write.status == ESP_GATT_OK) {
+        ESP_LOGD(TAG, "APP_CHALLENGE write completed, reading DEVICE_CHALLENGE...");
+        this->auth_state_ = AUTH_WAITING_DEVICE_CHALLENGE;
+        this->authenticator_.read_device_challenge_();
+      } else if (this->auth_state_ == AUTH_RESPONSE_SENT && param->write.status == ESP_GATT_OK) {
+        ESP_LOGI(TAG, "Authentication completed successfully");
+        this->auth_state_ = AUTH_AUTHENTICATED;
+        this->authenticated_ = true;
+        this->discover_characteristics_();
+      }
       break;
 
     case ESP_GATTC_READ_CHAR_EVT:
-      // Handle read events during authentication
-      ESP_LOGD(TAG, "Read characteristic event (handle: 0x%04x)", param->read.handle);
+      ESP_LOGD(TAG, "Read characteristic event (handle: 0x%04x, status: %d)", param->read.handle, param->read.status);
+
+      // Handle authentication read completion
+      if (this->auth_state_ == AUTH_WAITING_DEVICE_CHALLENGE && param->read.status == ESP_GATT_OK) {
+        ESP_LOGD(TAG, "DEVICE_CHALLENGE read completed, sending DEVICE_RESPONSE...");
+        this->auth_state_ = AUTH_RESPONSE_SENT;
+        this->authenticator_.handle_device_challenge_read(param->read.value, param->read.value_len);
+        this->authenticator_.send_device_response_();
+      }
       break;
 
     case ESP_GATTC_NOTIFY_EVT: {
@@ -106,23 +124,14 @@ void IGrillClient::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t
 }
 
 void IGrillClient::authenticate_() {
-  if (this->authenticated_) {
-    return;
+  if (this->auth_state_ != AUTH_IDLE) {
+    return;  // Already authenticating or authenticated
   }
-
-  ESP_LOGI(TAG, "Authenticating with iGrill device...");
-
-  // Use the authenticator to perform full authentication
+  ESP_LOGI(TAG, "Starting iGrill authentication...");
   this->authenticator_.reset();
-  this->authenticated_ = this->authenticator_.authenticate(this->parent());
-
-  if (this->authenticated_) {
-    ESP_LOGI(TAG, "Authentication successful");
-    // Discover characteristics after successful authentication
-    this->discover_characteristics_();
-  } else {
-    ESP_LOGW(TAG, "Authentication failed");
-  }
+  this->auth_state_ = AUTH_CHALLENGE_SENT;
+  this->authenticator_.authenticate(this->parent());
+  // Authentication continues asynchronously via gattc_event_handler
 }
 
 void IGrillClient::discover_characteristics_() {

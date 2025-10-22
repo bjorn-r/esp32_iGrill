@@ -14,11 +14,14 @@ class IgrillAuthenticator {
  public:
   /**
    * Perform full authentication sequence
-   * Returns true if authentication succeeded
+   * Initiates async authentication process
    */
-  bool authenticate(ble_client::BLEClient *client);
+  void authenticate(ble_client::BLEClient *client);
   bool is_authenticated() const { return authenticated_; }
   void reset() { authenticated_ = false; }
+  void handle_device_challenge_read(const uint8_t *data, uint16_t length);
+  bool read_device_challenge_();
+  bool send_device_response_();
 
  private:
   ble_client::BLEClient *client_{nullptr};
@@ -26,8 +29,6 @@ class IgrillAuthenticator {
   uint8_t device_challenge_[16]{};
 
   bool send_app_challenge_();
-  bool read_device_challenge_();
-  bool send_device_response_();
 };
 
 }  // namespace igrill_client

@@ -7,25 +7,17 @@ namespace igrill_client {
 
 static const char *const TAG = "igrill_auth";
 
-bool IgrillAuthenticator::authenticate(ble_client::BLEClient *client) {
+void IgrillAuthenticator::authenticate(ble_client::BLEClient *client) {
   if (client == nullptr) {
     ESP_LOGE(TAG, "BLE client is null");
-    return false;
+    return;
   }
-
   client_ = client;
   ESP_LOGI(TAG, "Starting iGrill authentication sequence...");
-
-  // Step 1: Write challenge to APP_CHALLENGE
   if (!send_app_challenge_()) {
     ESP_LOGE(TAG, "Failed to write APP_CHALLENGE");
-    return false;
   }
-
-  // Note: Steps 2-3 happen asynchronously via BLE events
-  // They will be triggered by the gattc_event_handler in igrill_client.cpp
-
-  return true;
+  // Authentication continues asynchronously via BLE events
 }
 
 bool IgrillAuthenticator::send_app_challenge_() {
@@ -51,6 +43,15 @@ bool IgrillAuthenticator::send_app_challenge_() {
 
   ESP_LOGD(TAG, "APP_CHALLENGE written successfully");
   return true;
+}
+
+void IgrillAuthenticator::handle_device_challenge_read(const uint8_t *data, uint16_t length) {
+  if (length != 16) {
+    ESP_LOGE(TAG, "Invalid device challenge length: %d (expected 16)", length);
+    return;
+  }
+  memcpy(device_challenge_, data, 16);
+  ESP_LOGD(TAG, "Device challenge received and stored");
 }
 
 bool IgrillAuthenticator::read_device_challenge_() {
@@ -101,8 +102,7 @@ bool IgrillAuthenticator::send_device_response_() {
     return false;
   }
 
-  authenticated_ = true;
-  ESP_LOGI(TAG, "Authentication sequence completed successfully");
+  ESP_LOGD(TAG, "DEVICE_RESPONSE write initiated");
   return true;
 }
 
