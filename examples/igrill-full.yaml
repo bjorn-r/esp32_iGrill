@@ -67,7 +67,3 @@ igrill_client:
   # Battery monitoring
   battery_level:
     name: "iGrill Battery"
-
-  # Optional advanced settings
-  scan_interval: 60s  # How often to poll for updates
-  timeout: 30s  # Connection timeout

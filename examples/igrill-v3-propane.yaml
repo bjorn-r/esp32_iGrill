@@ -43,7 +43,6 @@ ble_client:
 igrill_client:
   ble_client_id: igrill_v3_ble
   use_metric: false  # Set to true for Celsius, false for Fahrenheit
-  device_type: igrill_v3  # Specify V3 for special handling
 
   # Configure probes specific to iGrill V3
   probe1:
@@ -58,14 +57,7 @@ igrill_client:
   # V3 Specific: Propane Level Sensor
   propane:
     name: "Propane Level"
-    # Optional thresholds or alerts can be added here
-    low_threshold: 20  # Percentage below which to trigger low propane alert
-    high_threshold: 80  # Percentage to indicate full tank
 
   # Battery monitoring
   battery_level:
     name: "iGrill V3 Battery"
-
-  # Optional: Sensor update and connection settings
-  scan_interval: 90s  # Slightly longer interval for V3
-  timeout: 45s  # Adjusted connection timeout
