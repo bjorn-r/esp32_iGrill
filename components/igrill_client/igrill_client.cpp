@@ -236,8 +236,11 @@ float IGrillClient::parse_temperature_(const uint8_t *data, uint16_t length) {
   // Parse little-endian temperature
   int16_t raw_temp = (data[1] << 8) | data[0];
 
-  // Convert to degrees (Celsius by default from iGrill)
-  float temp_celsius = raw_temp;
+  // iGrill sends temperature in tenths of degrees Celsius
+  // Raw value must be divided by 10 to get actual temperature
+  // TODO: Verify with real hardware - adjust scaling if needed
+  // Example: raw_temp = 250 -> temp_celsius = 25.0°C
+  float temp_celsius = raw_temp / TEMP_SCALE_FACTOR;
 
   // Convert to Fahrenheit if needed
   if (!this->use_metric_) {

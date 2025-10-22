@@ -34,6 +34,9 @@ static const float INVALID_TEMPERATURE = -999.0f;
 static const uint16_t INVALID_TEMPERATURE_RAW = 0xFFFF;
 
 // Temperature conversion constants
+// iGrill devices report temperature in tenths of degrees Celsius
+// The raw int16 value must be divided by 10 to get actual temperature
+static const float TEMP_SCALE_FACTOR = 10.0f;  // iGrill reports in tenths of degrees
 static const float TEMP_OFFSET = 0.0f;
 static const float TEMP_SCALE = 1.0f;
 
