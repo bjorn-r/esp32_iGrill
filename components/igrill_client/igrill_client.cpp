@@ -43,7 +43,7 @@ void IGrillClient::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t
     case ESP_GATTC_DISCONNECT_EVT:
       ESP_LOGW(TAG, "Disconnected from iGrill device");
       this->authenticated_ = false;
-      this->auth_state_ = AUTH_IDLE;  // Reset authentication state for reconnection
+      this->auth_state_ = AUTH_IDLE;  // Reset authentication state (including AUTH_FAILED) for reconnection
       break;
 
     case ESP_GATTC_SEARCH_CMPL_EVT:
@@ -54,12 +54,21 @@ void IGrillClient::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t
     case ESP_GATTC_WRITE_CHAR_EVT:
       ESP_LOGD(TAG, "Write characteristic event (handle: 0x%04x, status: %d)", param->write.handle, param->write.status);
 
+      // Check for write failures during authentication
+      if (param->write.status != ESP_GATT_OK) {
+        if (this->auth_state_ == AUTH_CHALLENGE_SENT || this->auth_state_ == AUTH_RESPONSE_SENT) {
+          ESP_LOGE(TAG, "Authentication write failed at state %d with status: %d", this->auth_state_, param->write.status);
+          this->auth_state_ = AUTH_FAILED;
+        }
+        break;
+      }
+
       // Handle authentication write completion
-      if (this->auth_state_ == AUTH_CHALLENGE_SENT && param->write.status == ESP_GATT_OK) {
+      if (this->auth_state_ == AUTH_CHALLENGE_SENT) {
         ESP_LOGD(TAG, "APP_CHALLENGE write completed, reading DEVICE_CHALLENGE...");
         this->auth_state_ = AUTH_WAITING_DEVICE_CHALLENGE;
         this->authenticator_.read_device_challenge_();
-      } else if (this->auth_state_ == AUTH_RESPONSE_SENT && param->write.status == ESP_GATT_OK) {
+      } else if (this->auth_state_ == AUTH_RESPONSE_SENT) {
         ESP_LOGI(TAG, "Authentication completed successfully");
         this->auth_state_ = AUTH_AUTHENTICATED;
         this->authenticated_ = true;
@@ -70,8 +79,17 @@ void IGrillClient::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t
     case ESP_GATTC_READ_CHAR_EVT:
       ESP_LOGD(TAG, "Read characteristic event (handle: 0x%04x, status: %d)", param->read.handle, param->read.status);
 
+      // Check for read failures during authentication
+      if (param->read.status != ESP_GATT_OK) {
+        if (this->auth_state_ == AUTH_WAITING_DEVICE_CHALLENGE) {
+          ESP_LOGE(TAG, "Authentication read failed at state %d with status: %d", this->auth_state_, param->read.status);
+          this->auth_state_ = AUTH_FAILED;
+        }
+        break;
+      }
+
       // Handle authentication read completion
-      if (this->auth_state_ == AUTH_WAITING_DEVICE_CHALLENGE && param->read.status == ESP_GATT_OK) {
+      if (this->auth_state_ == AUTH_WAITING_DEVICE_CHALLENGE) {
         ESP_LOGD(TAG, "DEVICE_CHALLENGE read completed, sending DEVICE_RESPONSE...");
         this->auth_state_ = AUTH_RESPONSE_SENT;
         this->authenticator_.handle_device_challenge_read(param->read.value, param->read.value_len);
