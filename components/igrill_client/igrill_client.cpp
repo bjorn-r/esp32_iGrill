@@ -43,6 +43,7 @@ void IGrillClient::gattc_event_handler(esp_gattc_cb_event_t event, esp_gatt_if_t
     case ESP_GATTC_DISCONNECT_EVT:
       ESP_LOGW(TAG, "Disconnected from iGrill device");
       this->authenticated_ = false;
+      this->auth_state_ = AUTH_IDLE;  // Reset authentication state for reconnection
       break;
 
     case ESP_GATTC_SEARCH_CMPL_EVT:
